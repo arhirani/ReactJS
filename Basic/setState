@@ -1,0 +1,71 @@
+setState is asynchronous.This means state won’t update exactly after you call setState and this can lead to 
+some aggravating behavior which we will hopefully now be able to avoid!
+
+Two important points to remember - 
+1) this.setState won't update the state value immediately. so to get the latest value, use a callback function 
+for this.setState
+
+class App extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      counter: 0
+    }
+  }
+  onClick = () => {
+    this.setState((prevState, props) => {
+        return ({ counter: prevState.counter + 1})
+      },
+      () => console.log('callback: ' + this.state.counter)
+    )
+    console.log('after: ' + this.state.counter)
+  }
+  render() {
+    return(
+      <button onClick={this.onClick}>Click Me</button>
+    );
+  }
+}
+
+ReactDOM.render(
+  <App />, 
+  document.getElementById('app')
+);    
+
+output: 
+after: 0
+callback: 1
+
+
+2) What’s the point of passing a function instead of an object? Because setState is asynchronous, relying on it to create our new value will have some pitfalls. For example, by the time setState runs, another setState could have mutated state. Passing setState a function gives us two benefits. The first is it allows us to take a static copy of our state that will never change on its own. The second is that it will queue the setState calls so they run in order.
+
+
+class App extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      counter: 0
+    }
+  }
+  onClick = () => {
+    this.setState((prevState, _) => ({ counter: prevState.counter + 1 }))
+    this.setState((prevState, _) =>  {
+      console.log(prevState)
+      return { counter: prevState.counter + 1 }
+    })
+  }
+  render() {
+    console.log(this.state.counter)
+    return(
+      <button onClick={this.onClick}>Click Me</button>
+    );
+  }
+}
+
+ReactDOM.render(
+  <App />, 
+  document.getElementById('app')
+);
+
+We pass it as a function when we have to modify the state in one call/execution. 
+we pass setState a function which will guarantee both setState functions run in order. On top of this, it takes a snapshot of state, rather than using the current, un-updated state. Now we get our expected result of 2.
